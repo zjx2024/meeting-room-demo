@@ -2,6 +2,17 @@
 
 先按 [README](../README.md) 安装和启动。单服务演示打开 http://127.0.0.1:8000 ；开发模式打开 http://127.0.0.1:5173 。页面显示、日期选择和预约规则均使用北京时间。
 
+## WSL 启动
+
+前端已构建、依赖已安装时，在 WSL 中直接执行：
+
+```bash
+cd /mnt/e/projects/meeting-room-demo
+.venv/bin/python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+这里使用项目虚拟环境的解释器，无需先激活。新开 WSL 终端后同样使用这个命令；系统的 `python3` 不会自动使用 `.venv` 中安装的 Uvicorn。首次安装和前端源码修改后的构建步骤见 README。
+
 ## 停止与重新启动
 
 在运行服务的终端按 **Ctrl+C**，等待终端恢复命令提示符即可停止。单服务演示只需停止 Uvicorn；开发模式需在后端和 `npm run dev` 两个终端分别停止。关闭浏览器不会停止服务，停止服务不会清除数据库中的预约。
@@ -73,6 +84,7 @@
 
 | 现象 | 说明与处理 |
 | --- | --- |
+| WSL 提示 `python` 找不到，或 `python3` 提示 `No module named uvicorn` | 在项目根目录使用 `.venv/bin/python -m uvicorn ...`；如果虚拟环境尚未创建或没有依赖，先按 README 安装 |
 | 修改了前端源码，8000 页面没有变化 | 在 `frontend` 执行 `npm run build` 后刷新；开发时可打开 5173 查看 Vite 更新 |
 | 8000 提示先构建前端 | 按 README 执行前端安装、类型检查和构建；API 可独立使用 |
 | 时间轴有留白，但对应时间不可选 | 检查本人在其他房间是否有会议、开始是否已过去或超过七天、房间是否停用，以及所选开始/结束是否满足时长规则 |

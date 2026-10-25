@@ -16,14 +16,13 @@ FastAPI + React + Vite + TypeScript + SQLite。本项目按原始 DOCX、用户�
 
 ## 环境与安装
 
-在项目根目录执行。需要 Python 3.10+ 和 Node.js 24（本次使用 24.11.0）。Python 依赖固定在 `backend/requirements.txt`，前端依赖和锁文件在 `frontend` 中。
+以下命令在 WSL/Linux 的项目根目录执行；当前路径为 `/mnt/e/projects/meeting-room-demo`。从 PowerShell 进入时先执行 `wsl`。需要 Python 3.10+；Node.js 已验证 22.22.2 和 24.11.0。Python 依赖固定在 `backend/requirements.txt`，前端依赖和锁文件在 `frontend` 中。
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r backend/requirements.txt
+.venv/bin/python -m pip install -r backend/requirements.txt
 cd frontend
-npm ci
+npm ci --include=dev
 cd ..
 ```
 
@@ -33,17 +32,17 @@ cd ..
 python3 -m venv --without-pip .venv
 curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/meeting-room-get-pip.py
 .venv/bin/python /tmp/meeting-room-get-pip.py
-source .venv/bin/activate
+.venv/bin/python -m pip install -r backend/requirements.txt
 ```
 
-Windows PowerShell 可使用 `py -3 -m venv .venv` 和 `.venv\Scripts\Activate.ps1`。下文命令均在已激活虚拟环境后执行；前后端应使用同一个选定运行环境中的工具。
+下文显式使用项目虚拟环境的 `.venv/bin/python`，无需先激活环境，新开终端后也可直接执行。系统的 `python3` 与项目虚拟环境是不同环境，只有在安装了依赖的解释器中才能运行 Uvicorn；不要把启动命令改成系统的 `python3 -m uvicorn`。Python 虚拟环境和 `node_modules` 均应在 WSL 中安装；本机已有 nvm 提供的 WSL Node.js 时，无需设置临时 Node 路径。
 
 ## 开发模式
 
 终端一，在项目根目录启动后端：
 
 ```bash
-python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000 --reload
+.venv/bin/python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000 --reload
 ```
 
 终端二启动前端：
@@ -57,14 +56,14 @@ npm run dev
 
 ## 单服务演示
 
-先构建前端：
+在 WSL 项目根目录执行。首次使用先完成上面的环境与依赖安装，再构建前端并启动：
 
 ```bash
 cd frontend
 npm run typecheck
 npm run build
 cd ..
-python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000
+.venv/bin/python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
 打开 http://127.0.0.1:8000 。此时页面与 API 都由后端提供，可关闭 Vite。首次安装后再次复现依赖时使用 `npm ci`。未生成 `frontend/dist` 时，根页面会明确提示先构建，不会阻止后端 API 启动。
@@ -77,16 +76,16 @@ python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0
 
 | 运行方式 | 停止方法 |
 | --- | --- |
-| 单服务演示（8000） | 在运行 `python -m uvicorn ...` 的终端按 Ctrl+C |
+| 单服务演示（8000） | 在运行 `.venv/bin/python -m uvicorn ...` 的终端按 Ctrl+C |
 | 开发模式后端（8000） | 在运行 Uvicorn 的终端按 Ctrl+C，使用 `--reload` 时也这样停止 |
 | 开发模式前端（5173） | 在运行 `npm run dev` 的终端按 Ctrl+C；若终端询问是否终止批处理，输入 `Y` 并回车 |
 
 开发模式需要分别停止前后端两个终端。关闭网页不会停止服务。停止后预约数据仍保存在原数据库中。
 
-重新启动单服务演示时，在项目根目录、已激活虚拟环境的终端执行：
+重新启动单服务演示时，在 WSL 项目根目录直接执行，无需重复构建或激活虚拟环境：
 
 ```bash
-python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000
+.venv/bin/python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
 前端源码没有变化时，无需再次构建；修改了前端源码时，先按“单服务演示”中的步骤重新构建。执行自动浏览器验收前，也应先按上述方法停止占用 8000、5173 的服务。
@@ -153,7 +152,7 @@ python -m uvicorn app.main:create_app --factory --app-dir backend --host 127.0.0
 以下 Bash 示例计算北京时间明天，避免固定日期过期；在独立数据库上执行可重复演示：
 
 ```bash
-DEMO_DATE=$(python -c 'from datetime import datetime,timedelta; from zoneinfo import ZoneInfo; print((datetime.now(ZoneInfo("Asia/Shanghai"))+timedelta(days=1)).date())')
+DEMO_DATE=$(.venv/bin/python -c 'from datetime import datetime,timedelta; from zoneinfo import ZoneInfo; print((datetime.now(ZoneInfo("Asia/Shanghai"))+timedelta(days=1)).date())')
 curl -s http://127.0.0.1:8000/api/reservations -H 'Content-Type: application/json' -H 'X-Demo-User-Id: 1' --data "{\"room_id\":1,\"subject\":\"项目讨论\",\"attendee_count\":4,\"start_at\":\"${DEMO_DATE}T09:00:00+08:00\",\"end_at\":\"${DEMO_DATE}T10:00:00+08:00\"}"
 ```
 
@@ -162,7 +161,7 @@ curl -s http://127.0.0.1:8000/api/reservations -H 'Content-Type: application/jso
 ## 验证
 
 ```bash
-python -m pytest
+.venv/bin/python -m pytest
 cd frontend
 npm test
 npm run typecheck
